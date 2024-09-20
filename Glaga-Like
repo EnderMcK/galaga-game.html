@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galaga-Inspired Shooter</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background-color: black;
+            border: 1px solid white;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="480" height="600"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Player setup
+    let player = {
+        x: canvas.width / 2 - 15,
+        y: canvas.height - 50,
+        width: 30,
+        height: 30,
+        color: 'white',
+        speed: 5,
+        bullets: []
+    };
+
+    // Enemy setup
+    let enemies = [];
+    const enemyWidth = 30;
+    const enemyHeight = 30;
+    const enemySpeed = 2;
+    const enemySpawnRate = 1000;
+    const enemyDirectionChangeRate = 2000;
+    let enemyDirection = 1;
+
+    // Bullet setup
+    const bulletWidth = 5;
+    const bulletHeight = 10;
+    const bulletSpeed = 5;
+
+    // Input controls
+    let leftPressed = false;
+    let rightPressed = false;
+
+    // Draw player
+    function drawPlayer() {
+        ctx.fillStyle = player.color;
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
+
+    // Draw enemies
+    function drawEnemies() {
+        enemies.forEach((enemy, index) => {
+            ctx.fillStyle = 'green';
+            ctx.fillRect(enemy.x, enemy.y, enemyWidth, enemyHeight);
+            enemy.y += enemySpeed;
+
+            // Change direction occasionally
+            if (enemy.x + enemyWidth > canvas.width || enemy.x < 0) {
+                enemyDirection *= -1;
+            }
+            enemy.x += enemyDirection;
+
+            // Remove enemies that go off-screen
+            if (enemy.y > canvas.height) {
+                enemies.splice(index, 1);
+            }
+        });
+    }
+
+    // Draw bullets
+    function drawBullets() {
+        player.bullets.forEach((bullet, index) => {
+            ctx.fillStyle = 'red';
+            ctx.fillRect(bullet.x, bullet.y, bulletWidth, bulletHeight);
+            bullet.y -= bulletSpeed;
+
+            // Remove bullets that go off-screen
+            if (bullet.y < 0) {
+                player.bullets.splice(index, 1);
+            }
+        });
+    }
+
+    // Move player
+    function movePlayer() {
+        if (rightPressed && player.x + player.width < canvas.width) {
+            player.x += player.speed;
+        }
+        if (leftPressed && player.x > 0) {
+            player.x -= player.speed;
+        }
+    }
+
+    // Shoot bullet
+    function shootBullet() {
+        player.bullets.push({
+            x: player.x + player.width / 2 - bulletWidth / 2,
+            y: player.y,
+            width: bulletWidth,
+            height: bulletHeight
+        });
+    }
+
+    // Spawn enemy
+    function spawnEnemy() {
+        let x = Math.random() * (canvas.width - enemyWidth);
+        enemies.push({ x: x, y: -enemyHeight });
+    }
+
+    // Check for collisions between bullets and enemies
+    function checkCollisions() {
+        enemies.forEach((enemy, enemyIndex) => {
+            player.bullets.forEach((bullet, bulletIndex) => {
+                if (
+                    bullet.x < enemy.x + enemyWidth &&
+                    bullet.x + bulletWidth > enemy.x &&
+                    bullet.y < enemy.y + enemyHeight &&
+                    bullet.y + bulletHeight > enemy.y
+                ) {
+                    // Remove both the enemy and the bullet
+                    enemies.splice(enemyIndex, 1);
+                    player.bullets.splice(bulletIndex, 1);
+                }
+            });
+        });
+    }
+
+    // Game loop
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        drawPlayer();
+        drawBullets();
+        drawEnemies();
+        movePlayer();
+        checkCollisions();
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Event listeners for player movement
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') rightPressed = true;
+        if (e.key === 'ArrowLeft') leftPressed = true;
+        if (e.key === ' ') shootBullet();
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'ArrowRight') rightPressed = false;
+        if (e.key === 'ArrowLeft') leftPressed = false;
+    });
+
+    // Start the game
+    gameLoop();
+    setInterval(spawnEnemy, enemySpawnRate);
+    setInterval(() => {
+        enemyDirection *= -1;
+    }, enemyDirectionChangeRate);
+
+</script>
+
+</body>
+</html>
